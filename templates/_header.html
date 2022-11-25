@@ -1,16 +1,49 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- General Settings -->
   <meta charset="UTF-8">
+  <meta http-equiv="content-language" content="en-us">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <base href="{global.baseUrl}">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Node.js</title>
+  <title>{head.title} | {global.appName}</title>
+  <meta name="description" content="{head.description}">
+  <link rel="image/x-icon" rel="icon" href="favicon.ico">
+  <script type="text/javascript" charset="utf-8" src="public/app.js"></script>
+  <link rel="stylesheet" type="text/css" href="public/app.css">
 </head>
-<body>
+<body class="{body.class}">
   <!-- Page wrapper -->
   <div class="wrapper">
   <!-- Header -->
-  <div class="header"></div>
+    <div class="header">
+
+      <!--Logo-->
+      <a class="logo" href="/"></a>
+
+      <!--Navigation-->
+      <ul class="menu">
+        <li>
+          <a href="/">Home</a>
+        </li>
+        <li>
+          <a class="loggedOut" href="/">Signup</a>
+        </li>
+        <li>
+          <a class="loggedOut" href="/">Login</a>
+        </li>
+        <li>
+          <a class="loggedIn" href="/">Dashboard</a>
+        </li>
+        <li>
+          <a class="loggedIn" href="/">Account Settings</a>
+        </li>
+        <li>
+          <a class="loggedIn" href="/">Logout</a>
+        </li>
+      </ul>
+    </div>
 
   <!-- Pages-Specific content -->
   <div class="content">
