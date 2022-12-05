@@ -84,3 +84,32 @@ app.client.request = function(headers, path, method, queryStringObject, payload,
   xhr.send(payloadString);
 
 };
+
+// Bind the forms
+app.bindForms = function(){
+  document.querySelector("form").addEventListener("submit", (e) => {
+
+    // Stop it from submitting
+    e.preventDefault();
+    let formId = this.id;
+    let path = this.action;
+    let method = this.method.toUpperCase();
+
+    // Hide the error message (if it's currently shown gue to a previous error)
+    document.querySelector( "#" + formId + " .formError" ).style.display = 'hidden'; 
+
+    // Turn the inputs into a payload
+    let payload = {};
+    let elements = this.elements;
+    for(let i = 0; i < elements.length; i++){
+
+      if( elements[i].type !== 'submit' ){
+        let valueOfElement = elements[i].type == 'checkbox' ? elements[i].checked : elements[i].value;
+        payload[elements[i].name] = valueOfElement;
+      }
+    }
+
+    // Call the API
+    app.client.request( undefined, path, method, undefined, payload, function(statusCode, responsePayload){} );
+  });
+}
