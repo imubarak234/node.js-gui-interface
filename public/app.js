@@ -300,6 +300,53 @@ app.renewToken = function(callback){
   }
 }
 
+
+// Load data on the page
+app.loadDataOnPage = () => {
+  // Get the current page from the body class
+  let bodyClasses = document.querySelector("body").classList;
+  let primaryClass = typeof(bodyClasses[0]) == 'string' ? bodyClasses[0] : false;
+
+  // Logic for account settings page
+  if( primaryClass == 'accountEdit' ) {
+    app.loadAccountEditPage();
+  }
+};
+
+// Load the account edit page specifically
+app.loadAccountEditPage = () => {
+  // Get the phone number from current token, or lod the user out if none is there
+  let phone = typeof( app.config.sessionToken.phone ) == 'string' ? app.config.sessionToken.phone : false;
+  if(phone){
+    // Fetch the user data
+    let queryStringObject = {
+      'phone' : phone
+    };
+    app.client.request( undefined, '/api/users', 'GET', queryStringObject, undefined, (statusCode, responsePayload) => {
+
+      if(statusCode == 200){
+        // Put the data into the forms as values where needed
+        document.querySelector( "#accountEdit1 .firstNameInput" ).value = responsePayload.firstName;
+        document.querySelector( "#accountEdit1 .lastNameInput" ).value = responsePayload.lastName;
+        document.querySelector( "#accountEdit1 .displayPhoneInput" ).value = responsePayload.phone;
+
+        // Put the hidden phone field into both forms
+        let hiddenPhoneInputs = document.querySelectorAll( "input.hiddedPhoneNumberInput" );
+        for(let i = 0; i < hiddenPhoneInputs.length; i++){
+          hiddenPhoneInputs[i].value = responsePayload.phone;
+        }
+      }
+      else {
+        // If the request comes back as something other than 200, log the user out (on the assumption that the api is temporarily donw or the users token is bad)
+        app.logUserOut();
+      }
+    } )
+  }
+  else {
+    app.logUserOut();
+  }
+}
+
 // Loop to renew then often
 app.tokenRenewalLoop = () => {
   setInterval( () => {
@@ -318,12 +365,15 @@ app.init = function(){
 
   // Bind logout button
   app.bindLogoutButton();
-  
+
   // Get the token form localstorage
   app.getSessionToken();
 
   // Renew token
   app.tokenRenewalLoop();
+
+  // Load data on page
+  app.loadDataOnPage();
 }
 
 // Call the init processes after the window loads
