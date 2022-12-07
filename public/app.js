@@ -316,6 +316,9 @@ app.init = function(){
   // Bind all form submissions
   app.bindForms();
 
+  // Bind logout button
+  app.bindLogoutButton();
+  
   // Get the token form localstorage
   app.getSessionToken();
 
