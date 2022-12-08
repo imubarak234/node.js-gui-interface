@@ -214,6 +214,12 @@ app.formResponseProcessor = function( formId, requestPayload, responsePayload ){
     app.setSessionToken(responsePayload);
     window.location = '/checks/all';
   }
+
+  // If forms saved successfully and they have success messages, show them
+  let formsWithSuccessMessages = [ 'accountEdit1', 'accountEdit2' ];
+  if(formsWithSuccessMessages.indexOf(formId) > -1){
+    document.querySelector( "#" + formId + " .formSuccess" ).style.display = 'block';
+  }
 };
 
 // Get the session token from localstorage and set it in the app.config object
@@ -313,7 +319,7 @@ app.loadDataOnPage = () => {
   }
 };
 
-// Load the account edit page specifically
+// Load the account edit page specificallyp
 app.loadAccountEditPage = () => {
   // Get the phone number from current token, or lod the user out if none is there
   let phone = typeof( app.config.sessionToken.phone ) == 'string' ? app.config.sessionToken.phone : false;
@@ -370,7 +376,7 @@ app.init = function(){
   app.getSessionToken();
 
   // Renew token
-  app.tokenRenewalLoop();
+  // app.tokenRenewalLoop();
 
   // Load data on page
   app.loadDataOnPage();
