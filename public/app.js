@@ -81,7 +81,7 @@ app.client.request = function(headers, path, method, queryStringObject, payload,
 
   // Send the payload as JSON
   let payloadString = JSON.stringify(payload);
-  console.log("String payload", payloadString)
+  // console.log("String payload", payloadString)
   xhr.send(payloadString);
 
 };
@@ -100,7 +100,10 @@ app.bindLogoutButton = () => {
 };
 
 // Log the user out then redirect them
-app.logUserOut = () => {
+app.logUserOut = (redirectUser) => {
+  // Set redirectUser to default to true
+  redirectUser = typeof(redirectUser) == 'boolean' ? redirectUser : true;
+
   // Get the curent token id
   let tokenId = typeof(app.config.sessionToken.id) == 'string' ? app.config.sessionToken.id : false;
 
@@ -114,9 +117,10 @@ app.logUserOut = () => {
     app.setSessionToken(false);
 
     // Send the user to the logged put page
+    if(redirectUser)
     window.location = '/session/deleted'
   } );
-}
+};
 
 // Bind the forms
 app.bindForms = function(){
@@ -165,8 +169,11 @@ app.bindForms = function(){
 
         console.log(payload)
 
+        // If the method is DELETE, the payload should be a queryStringObject instead
+        let queryStringObject = method == 'DELETE' ? payload : {};
+
         // Call the API
-        app.client.request( undefined, path, method, undefined, payload, function( statusCode, responsePayload ){
+        app.client.request( undefined, path, method, queryStringObject, payload, function( statusCode, responsePayload ){
 
           // Display an error on the form if needed
           if(statusCode !== 200){
@@ -198,7 +205,7 @@ app.bindForms = function(){
     }
       
   } else {
-    console.log("The binding is not working");
+    console.log("The form binding is not working");
   }
   
 };
@@ -242,6 +249,12 @@ app.formResponseProcessor = function( formId, requestPayload, responsePayload ){
   let formsWithSuccessMessages = [ 'accountEdit1', 'accountEdit2' ];
   if(formsWithSuccessMessages.indexOf(formId) > -1){
     document.querySelector( "#" + formId + " .formSuccess" ).style.display = 'block';
+  }
+
+  // If the user just deleted their account, redirect them to the account-delete page
+  if( formId == 'accountEdit3' ){
+    app.logUserOut(false);
+    window.location = '/account/deleted';
   }
 };
 
@@ -399,7 +412,7 @@ app.init = function(){
   app.getSessionToken();
 
   // Renew token
-  // app.tokenRenewalLoop();
+  app.tokenRenewalLoop();
 
   // Load data on page
   app.loadDataOnPage();
