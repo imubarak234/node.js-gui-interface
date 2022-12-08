@@ -121,60 +121,83 @@ app.logUserOut = () => {
 // Bind the forms
 app.bindForms = function(){
   if(document.querySelector("form")){
-    let formObj = document.querySelector("form")
-    formObj.addEventListener("submit", (e) => {
 
-      // Stop it from submitting
-      e.preventDefault();
-      let formId = formObj.id;
-      let path = formObj.action;
-      // console.log(formObj.id)
-      // console.log(formObj.action)
-      console.log(formObj.action)
-      // console.log(this)
-      // console.log(e)
-      let method = formObj.method.toUpperCase();
+    const allForms = document.querySelectorAll("form");
+    for( let x = 0;  x < allForms.length; x++){
+      let formObj = allForms[x]
 
-      // Hide the error message (if it's currently shown gue to a previous error)
-      document.querySelector( "#" + formId + " .formError" ).style.display = 'hidden'; 
+      formObj.addEventListener( "submit", (e) => {
 
-      // Turn the inputs into a payload
-      let payload = {};
-      let elements = formObj.elements;
-      for(let i = 0; i < elements.length; i++){
+        // Stop it from submitting
+        e.preventDefault();
+        let formId = formObj.id;
+        let path = formObj.action;
+        // console.log(formObj.id)
+        // console.log(formObj.action)
+        console.log(formObj.action)
+        // console.log(this)
+        // console.log(e)
+        let method = formObj.method.toUpperCase();
 
-        if( elements[i].type !== 'submit' ){
-          let valueOfElement = elements[i].type == 'checkbox' ? elements[i].checked : elements[i].value;
-          payload[elements[i].name] = valueOfElement;
+        // Hide the error message (if it's currently shown gue to a previous error)
+        document.querySelector( "#" + formId + " .formError" ).style.display = 'none'; 
+
+        // Hide the success message (if it's currently shown due to a previous error)
+        if( document.querySelector("#" + formId + " .formSuccess") ){
+          document.querySelector( "#" + formId + " .formSuccess" ).style.display = 'none';
         }
-      }
 
-      console.log(payload)
+        // Turn the inputs into a payload
+        let payload = {};
+        let elements = formObj.elements;
+        for(let i = 0; i < elements.length; i++){
 
-      // Call the API
-      app.client.request( undefined, path, method, undefined, payload, function( statusCode, responsePayload ){
-
-        // Display an error on the form if needed
-        if(statusCode !== 200){
-
-          // Try to get error from API, or set a default error message
-          let error = typeof(responsePayload.Error) == 'string' ? responsePayload.Error : 'An error has occcured, please try again';
-
-          // Set the formError field with the error text
-          let errorElement =  document.querySelector( "#" + formId + " .formError" )
-          console.log(document.querySelector("#accountCreate .formError"));
-          errorElement.innerHTML = error;
-
-          // Show (unhide) the form error field on the form
-          document.querySelector( "#" + formId + " .formError" ).style.display = 'block';
+          if( elements[i].type !== 'submit' ){
+            let valueOfElement = elements[i].type == 'checkbox' ? elements[i].checked : elements[i].value;
+            if( elements[i].name == '_method' ){
+              method = valueOfElement;
+            }
+            else {
+              payload[elements[i].name] = valueOfElement;
+            }
+          }
         }
-        else {
-          // If successful, send to form response processor
-          app.formResponseProcessor( formId, payload, responsePayload )
-        }
+
+        console.log(payload)
+
+        // Call the API
+        app.client.request( undefined, path, method, undefined, payload, function( statusCode, responsePayload ){
+
+          // Display an error on the form if needed
+          if(statusCode !== 200){
+
+            if( statusCode == 403 ){
+              // log the user out
+              app.logUserOut();
+            }
+            else {
+              // Try to get error from API, or set a default error message
+              let error = typeof(responsePayload.Error) == 'string' ? responsePayload.Error : 'An error has occcured, please try again';
+
+              // Set the formError field with the error text
+              let errorElement =  document.querySelector( "#" + formId + " .formError" );
+              // console.log(document.querySelector("#accountCreate .formError"));
+              errorElement.innerHTML = error;
+
+              // Show (unhide) the form error field on the form
+              document.querySelector( "#" + formId + " .formError" ).style.display = 'block';
+            }
+
+          }
+          else {
+            // If successful, send to form response processor
+            app.formResponseProcessor( formId, payload, responsePayload )
+          }
+        } );
       } );
-    });
-  }{
+    }
+      
+  } else {
     console.log("The binding is not working");
   }
   
@@ -337,7 +360,7 @@ app.loadAccountEditPage = () => {
         document.querySelector( "#accountEdit1 .displayPhoneInput" ).value = responsePayload.phone;
 
         // Put the hidden phone field into both forms
-        let hiddenPhoneInputs = document.querySelectorAll( "input.hiddedPhoneNumberInput" );
+        let hiddenPhoneInputs = document.querySelectorAll( "input.hiddenPhoneNumberInput" );
         for(let i = 0; i < hiddenPhoneInputs.length; i++){
           hiddenPhoneInputs[i].value = responsePayload.phone;
         }
