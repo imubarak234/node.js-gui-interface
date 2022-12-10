@@ -194,7 +194,7 @@ app.bindForms = function(){
         let queryStringObject = method == 'DELETE' ? payload : {};
 
         // Call the API
-        app.client.request( undefined, path, method, queryStringObject, payload, function( statusCode, responsePayload ){
+        app.client.request( undefined, path, method, queryStringObject, payload, function( statusCode, responsePayload ) {
 
           // Display an error on the form if needed
           if(statusCode !== 200){
@@ -379,6 +379,11 @@ app.loadDataOnPage = () => {
   if( primaryClass == 'accountEdit' ) {
     app.loadAccountEditPage();
   }
+
+  // Logic for dashboard page
+  if( primaryClass == 'checkList' ) {
+    app.loadChecksListPage();
+  }
 };
 
 // Load the account edit page specificallyp
@@ -412,6 +417,79 @@ app.loadAccountEditPage = () => {
   }
   else {
     app.logUserOut();
+  }
+};
+
+// Load the dashboard page specifically
+app.loadChecksListPage = () => {
+  // Get the phone number from the current token, or log the user out if none is there
+  let phone = typeof(app.config.sessionToken.phone) == 'string' ? app.config.sessionToken.phone : false;
+  if( phone ) {
+    // Fetch the user data
+    let queryStringObject = {
+      'phone' : phone
+    };
+    app.client.request( undefined, 'api/users', 'GET', queryStringObject, undefined, ( statusCode, responsePayload ) => {
+      if( statusCode == 200 ) {
+        // Determine how many checks the user has
+        let allChecks = typeof( responsePayload.checks ) == 'object' && responsePayload.checks instanceof Array && responsePayload.checks.length > 0 ? responsePayload.checks : [];
+        if(allChecks.length > 0){
+
+          // Show each created check as a new row in the table
+          allChecks.forEach( (checkId) => {
+            // Get the data for the check
+            let newQueryStringObject = {
+              'id' : checkId
+            };
+
+            app.client.request( undefined, 'api/checks', 'GET', newQueryStringObject, undefined, ( statusCode, responsePayload ) => {
+              if( statusCode == 200 ){
+                let checkData = responsePayload;
+                // Make the check data into a table new
+                let table = document.getElementById( "checksListTable" );
+                let tr = table.insertRow(-1);
+                tr.classList.add('checkRow');
+                let td0 = tr.insertCell(0)
+                let td1 = tr.insertCell(1)
+                let td2 = tr.insertCell(2)
+                let td3 = tr.insertCell(3)
+                let td4 = tr.insertCell(4)
+
+                td0.innerHTML = responsePayload.method.toUpperCase();
+                td1.innerHTML = responsePayload.protocol + "://";
+                td2.innerHTML = responsePayload.url;
+                let state = typeof( responsePayload.state ) == 'string' ? responsePayload.state : 'unknown';
+                td3.innerHTML = state;
+                td4.innerHTML = '<a href="checks/edit?id=' + responsePayload.id + '">View / Edit / Delete</a>';
+
+              }
+              else {
+                console.log("Error trying to load check ID: ", checkId);
+              }
+            } );
+          } );
+
+          if( allChecks.length < 5 ){
+            // Show the createCheck CTA
+            document.getElementById( "createCheckCTA" ).style.display = 'block';
+          }
+        }
+        else {
+          // Show 'you have no checks' message
+          document.getElementById("noChecksMessage").style.display = 'table-row';
+
+          // Show the createCheck CTA
+          document.getElementById("createCheckCTA").style.display = 'block';
+        }
+      }
+      else {
+        // If the request comes back as something other than 200, log the user our (on the assumption that the api is temporarily down or the users token is bad)
+        app.logUserOut();
+      }
+    } )
+  } 
+  else {
+    app.logUserOut()
   }
 }
 
