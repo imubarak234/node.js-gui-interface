@@ -81,7 +81,7 @@ app.client.request = function(headers, path, method, queryStringObject, payload,
 
   // Send the payload as JSON
   let payloadString = JSON.stringify(payload);
-  console.log("String payload", payloadString)
+  // console.log("String payload", payloadString)
   xhr.send(payloadString);
 
 };
@@ -100,7 +100,10 @@ app.bindLogoutButton = () => {
 };
 
 // Log the user out then redirect them
-app.logUserOut = () => {
+app.logUserOut = (redirectUser) => {
+  // Set redirectUser to default to true
+  redirectUser = typeof(redirectUser) == 'boolean' ? redirectUser : true;
+
   // Get the curent token id
   let tokenId = typeof(app.config.sessionToken.id) == 'string' ? app.config.sessionToken.id : false;
 
@@ -114,68 +117,116 @@ app.logUserOut = () => {
     app.setSessionToken(false);
 
     // Send the user to the logged put page
+    if(redirectUser)
     window.location = '/session/deleted'
   } );
-}
+};
 
 // Bind the forms
 app.bindForms = function(){
   if(document.querySelector("form")){
-    let formObj = document.querySelector("form")
-    formObj.addEventListener("submit", (e) => {
 
-      // Stop it from submitting
-      e.preventDefault();
-      let formId = formObj.id;
-      let path = formObj.action;
-      // console.log(formObj.id)
-      // console.log(formObj.action)
-      console.log(formObj.action)
-      // console.log(this)
-      // console.log(e)
-      let method = formObj.method.toUpperCase();
+    const allForms = document.querySelectorAll("form");
+    for( let x = 0;  x < allForms.length; x++){
+      let formObj = allForms[x]
 
-      // Hide the error message (if it's currently shown gue to a previous error)
-      document.querySelector( "#" + formId + " .formError" ).style.display = 'hidden'; 
+      formObj.addEventListener( "submit", (e) => {
 
-      // Turn the inputs into a payload
-      let payload = {};
-      let elements = formObj.elements;
-      for(let i = 0; i < elements.length; i++){
+        // Stop it from submitting
+        e.preventDefault();
+        let formId = formObj.id;
+        let path = formObj.action;
+        // console.log(formObj.id)
+        // console.log(formObj.action)
+        console.log(formObj.action)
+        // console.log(this)
+        // console.log(e)
+        let method = formObj.method.toUpperCase();
 
-        if( elements[i].type !== 'submit' ){
-          let valueOfElement = elements[i].type == 'checkbox' ? elements[i].checked : elements[i].value;
-          payload[elements[i].name] = valueOfElement;
+        // Hide the error message (if it's currently shown gue to a previous error)
+        document.querySelector( "#" + formId + " .formError" ).style.display = 'none'; 
+
+        // Hide the success message (if it's currently shown due to a previous error)
+        if( document.querySelector("#" + formId + " .formSuccess") ){
+          document.querySelector( "#" + formId + " .formSuccess" ).style.display = 'none';
         }
-      }
 
-      console.log(payload)
+        // Turn the inputs into a payload
+        let payload = {};
+        let elements = formObj.elements;
+        for(let i = 0; i < elements.length; i++){
 
-      // Call the API
-      app.client.request( undefined, path, method, undefined, payload, function( statusCode, responsePayload ){
+          if( elements[i].type !== 'submit' ){
+            // Determine class of element and set value accordingly
+            let classOfElement = typeof(elements[i].classList.value) == 'string' && elements[i].classList.value.length > 0 ? elements[i].classList.value : "";
+            let valueOfElement = elements[i].type == 'checkbox' && classOfElement.indexOf('multiselect') == -1 ? elements[i].checked : classOfElement.indexOf("intval") == -1 ? elements[i].value : parseInt(elements[i].value);
+            let elementIsChecked = elements[i].checked;
 
-        // Display an error on the form if needed
-        if(statusCode !== 200){
+            // Override the method of the form if the input's name is _method
+            let nameOfElement = elements[i].name
 
-          // Try to get error from API, or set a default error message
-          let error = typeof(responsePayload.Error) == 'string' ? responsePayload.Error : 'An error has occcured, please try again';
+            if( nameOfElement == '_method' ){
+              method = valueOfElement;
+            }
+            else {
+              // Create an payload field named "method" if the elements name is actually httpmethod
+              if( nameOfElement == 'httpmethod' )
+              nameOfElement = 'method'
 
-          // Set the formError field with the error text
-          let errorElement =  document.querySelector( "#" + formId + " .formError" )
-          console.log(document.querySelector("#accountCreate .formError"));
-          errorElement.innerHTML = error;
-
-          // Show (unhide) the form error field on the form
-          document.querySelector( "#" + formId + " .formError" ).style.display = 'block';
+              // If the element has the class "multiselect" add its value(s) as array elements
+              if( classOfElement.indexOf("multiselect") > -1 ){
+                if( elementIsChecked ) {
+                  payload[nameOfElement] = typeof(payload[nameOfElement]) == 'object' && payload[nameOfElement] instanceof Array ? payload[nameOfElement] : [];
+                  payload[nameOfElement].push(valueOfElement);
+                }
+              }
+              else {
+                payload[nameOfElement] = valueOfElement;
+              }
+              
+            }
+          }
         }
-        else {
-          // If successful, send to form response processor
-          app.formResponseProcessor( formId, payload, responsePayload )
-        }
+
+        console.log(payload)
+
+        // If the method is DELETE, the payload should be a queryStringObject instead
+        let queryStringObject = method == 'DELETE' ? payload : {};
+
+        // Call the API
+        app.client.request( undefined, path, method, queryStringObject, payload, function( statusCode, responsePayload ) {
+
+          // Display an error on the form if needed
+          if(statusCode !== 200){
+
+            if( statusCode == 403 ){
+              // log the user out
+              app.logUserOut();
+            }
+            else {
+              // Try to get error from API, or set a default error message
+              let error = typeof(responsePayload.Error) == 'string' ? responsePayload.Error : 'An error has occcured, please try again';
+
+              // Set the formError field with the error text
+              let errorElement =  document.querySelector( "#" + formId + " .formError" );
+              // console.log(document.querySelector("#accountCreate .formError"));
+              errorElement.innerHTML = error;
+
+              // Show (unhide) the form error field on the form
+              document.querySelector( "#" + formId + " .formError" ).style.display = 'block';
+            }
+
+          }
+          else {
+            // If successful, send to form response processor
+            app.formResponseProcessor( formId, payload, responsePayload )
+          }
+        } );
       } );
-    });
-  }{
-    console.log("The binding is not working");
+    }
+      
+  } else {
+    console.log("The form binding is not working");
   }
   
 };
@@ -213,6 +264,23 @@ app.formResponseProcessor = function( formId, requestPayload, responsePayload ){
   if( formId == 'sessionCreate' ){
     app.setSessionToken(responsePayload);
     window.location = '/checks/all';
+  }
+
+  // If forms saved successfully and they have success messages, show them
+  let formsWithSuccessMessages = [ 'accountEdit1', 'accountEdit2' ];
+  if(formsWithSuccessMessages.indexOf(formId) > -1){
+    document.querySelector( "#" + formId + " .formSuccess" ).style.display = 'block';
+  }
+
+  // If the user just deleted their account, redirect them to the account-delete page
+  if( formId == 'accountEdit3' ){
+    app.logUserOut(false);
+    window.location = '/account/deleted';
+  }
+
+  // If the userjust created a new check successfully, redirect back to the dashboard
+  if( formId == 'checksCreate' ){
+    window.location = '/checks/all'
   }
 };
 
@@ -300,6 +368,131 @@ app.renewToken = function(callback){
   }
 }
 
+
+// Load data on the page
+app.loadDataOnPage = () => {
+  // Get the current page from the body class
+  let bodyClasses = document.querySelector("body").classList;
+  let primaryClass = typeof(bodyClasses[0]) == 'string' ? bodyClasses[0] : false;
+
+  // Logic for account settings page
+  if( primaryClass == 'accountEdit' ) {
+    app.loadAccountEditPage();
+  }
+
+  // Logic for dashboard page
+  if( primaryClass == 'checkList' ) {
+    app.loadChecksListPage();
+  }
+};
+
+// Load the account edit page specificallyp
+app.loadAccountEditPage = () => {
+  // Get the phone number from current token, or lod the user out if none is there
+  let phone = typeof( app.config.sessionToken.phone ) == 'string' ? app.config.sessionToken.phone : false;
+  if(phone){
+    // Fetch the user data
+    let queryStringObject = {
+      'phone' : phone
+    };
+    app.client.request( undefined, '/api/users', 'GET', queryStringObject, undefined, (statusCode, responsePayload) => {
+
+      if(statusCode == 200){
+        // Put the data into the forms as values where needed
+        document.querySelector( "#accountEdit1 .firstNameInput" ).value = responsePayload.firstName;
+        document.querySelector( "#accountEdit1 .lastNameInput" ).value = responsePayload.lastName;
+        document.querySelector( "#accountEdit1 .displayPhoneInput" ).value = responsePayload.phone;
+
+        // Put the hidden phone field into both forms
+        let hiddenPhoneInputs = document.querySelectorAll( "input.hiddenPhoneNumberInput" );
+        for(let i = 0; i < hiddenPhoneInputs.length; i++){
+          hiddenPhoneInputs[i].value = responsePayload.phone;
+        }
+      }
+      else {
+        // If the request comes back as something other than 200, log the user out (on the assumption that the api is temporarily donw or the users token is bad)
+        app.logUserOut();
+      }
+    } )
+  }
+  else {
+    app.logUserOut();
+  }
+};
+
+// Load the dashboard page specifically
+app.loadChecksListPage = () => {
+  // Get the phone number from the current token, or log the user out if none is there
+  let phone = typeof(app.config.sessionToken.phone) == 'string' ? app.config.sessionToken.phone : false;
+  if( phone ) {
+    // Fetch the user data
+    let queryStringObject = {
+      'phone' : phone
+    };
+    app.client.request( undefined, 'api/users', 'GET', queryStringObject, undefined, ( statusCode, responsePayload ) => {
+      if( statusCode == 200 ) {
+        // Determine how many checks the user has
+        let allChecks = typeof( responsePayload.checks ) == 'object' && responsePayload.checks instanceof Array && responsePayload.checks.length > 0 ? responsePayload.checks : [];
+        if(allChecks.length > 0){
+
+          // Show each created check as a new row in the table
+          allChecks.forEach( (checkId) => {
+            // Get the data for the check
+            let newQueryStringObject = {
+              'id' : checkId
+            };
+
+            app.client.request( undefined, 'api/checks', 'GET', newQueryStringObject, undefined, ( statusCode, responsePayload ) => {
+              if( statusCode == 200 ){
+                let checkData = responsePayload;
+                // Make the check data into a table new
+                let table = document.getElementById( "checksListTable" );
+                let tr = table.insertRow(-1);
+                tr.classList.add('checkRow');
+                let td0 = tr.insertCell(0)
+                let td1 = tr.insertCell(1)
+                let td2 = tr.insertCell(2)
+                let td3 = tr.insertCell(3)
+                let td4 = tr.insertCell(4)
+
+                td0.innerHTML = responsePayload.method.toUpperCase();
+                td1.innerHTML = responsePayload.protocol + "://";
+                td2.innerHTML = responsePayload.url;
+                let state = typeof( responsePayload.state ) == 'string' ? responsePayload.state : 'unknown';
+                td3.innerHTML = state;
+                td4.innerHTML = '<a href="checks/edit?id=' + responsePayload.id + '">View / Edit / Delete</a>';
+
+              }
+              else {
+                console.log("Error trying to load check ID: ", checkId);
+              }
+            } );
+          } );
+
+          if( allChecks.length < 5 ){
+            // Show the createCheck CTA
+            document.getElementById( "createCheckCTA" ).style.display = 'block';
+          }
+        }
+        else {
+          // Show 'you have no checks' message
+          document.getElementById("noChecksMessage").style.display = 'table-row';
+
+          // Show the createCheck CTA
+          document.getElementById("createCheckCTA").style.display = 'block';
+        }
+      }
+      else {
+        // If the request comes back as something other than 200, log the user our (on the assumption that the api is temporarily down or the users token is bad)
+        app.logUserOut();
+      }
+    } )
+  } 
+  else {
+    app.logUserOut()
+  }
+}
+
 // Loop to renew then often
 app.tokenRenewalLoop = () => {
   setInterval( () => {
@@ -316,11 +509,17 @@ app.init = function(){
   // Bind all form submissions
   app.bindForms();
 
+  // Bind logout button
+  app.bindLogoutButton();
+
   // Get the token form localstorage
   app.getSessionToken();
 
   // Renew token
   app.tokenRenewalLoop();
+
+  // Load data on page
+  app.loadDataOnPage();
 }
 
 // Call the init processes after the window loads

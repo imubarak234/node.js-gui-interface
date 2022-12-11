@@ -1,0 +1,1 @@
+{"check":{"id":"rrukazneocja3p641z4d","userPhone":"5367472839","protocol":"https","url":"twitter.com","method":"put","successCodes":[200,201,301,302],"timeoutSeconds":2,"state":"down","lastChecked":1670610062462},"outcome":{"error":{"error":true,"value":"timeout"},"responseCode":false},"state":"down","alert":false,"time":1670793434792}
