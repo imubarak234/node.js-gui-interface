@@ -381,7 +381,7 @@ app.loadDataOnPage = () => {
   }
 
   // Logic for dashboard page
-  if( primaryClass == 'checkList' ) {
+  if( primaryClass == 'checksList' ) {
     app.loadChecksListPage();
   }
 };
@@ -424,6 +424,7 @@ app.loadAccountEditPage = () => {
 app.loadChecksListPage = () => {
   // Get the phone number from the current token, or log the user out if none is there
   let phone = typeof(app.config.sessionToken.phone) == 'string' ? app.config.sessionToken.phone : false;
+  
   if( phone ) {
     // Fetch the user data
     let queryStringObject = {
