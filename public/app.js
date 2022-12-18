@@ -2,6 +2,8 @@
  *  Frontend Logic for the Application
  */
 
+const { checks } = require("../lib/handlers");
+
 // Container for the frontend application
 const app = {}
 
@@ -44,11 +46,10 @@ app.client.request = function(headers, path, method, queryStringObject, payload,
   // Form the http request as a JSON type
   let xhr = new XMLHttpRequest();
   xhr.open(method, requestUrl, true);
-  xhr.setRequestHeader("Content-Type", "application/json");
+  xhr.setRequestHeader("Content-type", "application/json");
 
   // For each header sent, add it to the request
   for (let headerKey in headers){
-
     if(headers.hasOwnProperty(headerKey)){
       xhr.setRequestHeader(headerKey, headers[headerKey]);
     }
@@ -282,6 +283,11 @@ app.formResponseProcessor = function( formId, requestPayload, responsePayload ){
   if( formId == 'checksCreate' ){
     window.location = '/checks/all'
   }
+
+  // If the user just deleted a check, redirect them to the dashboard
+  if( formId == 'checksEdit2' ){
+    window.location = '/checks/all'
+  }
 };
 
 // Get the session token from localstorage and set it in the app.config object
@@ -384,7 +390,12 @@ app.loadDataOnPage = () => {
   if( primaryClass == 'checksList' ) {
     app.loadChecksListPage();
   }
-};
+
+  // Logic for check details page
+  if( primaryClass == 'checksEdit' ){
+    app.loadChecksEditPage();
+  }
+};;
 
 // Load the account edit page specificallyp
 app.loadAccountEditPage = () => {
@@ -491,6 +502,52 @@ app.loadChecksListPage = () => {
   } 
   else {
     app.logUserOut()
+  }
+};
+
+// Load the checks edit page specifically 
+app.loadChecksEditPage = () => {
+
+  // Get the check id from the query string, if none is found then redirect back to dashboard
+  let id = typeof(window.location.href.split('=')[1]) == 'string' && window.location.href.split("=")[1].length > 0 ? window.location.href.split("=")[1] : false;
+  if(id){
+    // Fetch the check data
+    let queryStringObject = {
+      'id' : id
+    };
+
+    app.client.request( undefined. api/checks, 'GET', queryStringObject, undefined, ( statusCode, responsePayload ) => {
+      if( statusCode == 200 ){
+
+        // Put the hidden id field into both forms
+        let hiddenIdInputs = document.querySelectorAll("input.hiddenIdInput");
+        for( let i = 0; i < hiddenIdInputs.length; i++ ){
+          hiddenIdInputs[i].value = responsePayload.id;
+        }
+
+        // Put the data into top form as values where needed
+        document.querySelector("#checksEdit1 .displayIdInput").value = responsePayload.id;
+        document.querySelector("#checksEdit1 .displayStateInput").value = responsePayload.state;
+        document.querySelector("#checksEdit1 .protocolInput").value = responsePayload.protocol;
+        document.querySelector("#checksEdit1 .urlInput").value = responsePayload.url;
+        document.querySelector("#checksEdit1 .methodInput").value = responsePayload.method;
+        document.querySelector("#checksEdit1 .timeoutInput").value = responsePayload.timeoutSeconds;
+        let successCodesCheckboxes = document.querySelectorAll("#checksEdit1 input.successCodesInput");
+
+        for( let i = 0; i < successCodesCheckboxes.length; i++ ){
+          if ( responsePayload.successCodes.indexOf(parseInt( successCodesCheckboxes[i].value )) > -1 ){
+            successCodesCheckboxes[i].checked = true;
+          }
+        }
+      }
+      else {
+        // If the request comes back as something other than 200, redirect back to dashboard
+        window.location = "/checks/all"
+      }
+    } )
+  }
+  else {
+    window.location = '/checks/all'
   }
 }
 
