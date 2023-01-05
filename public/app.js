@@ -2,7 +2,7 @@
  *  Frontend Logic for the Application
  */
 
-const { checks } = require("../lib/handlers");
+// const { checks } = require("../lib/handlers");
 
 // Container for the frontend application
 const app = {}
