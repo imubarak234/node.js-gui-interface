@@ -516,7 +516,7 @@ app.loadChecksEditPage = () => {
       'id' : id
     };
 
-    app.client.request( undefined. api/checks, 'GET', queryStringObject, undefined, ( statusCode, responsePayload ) => {
+    app.client.request( undefined, 'api/checks', 'GET', queryStringObject, undefined, ( statusCode, responsePayload ) => {
       if( statusCode == 200 ){
 
         // Put the hidden id field into both forms
