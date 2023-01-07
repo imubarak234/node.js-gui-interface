@@ -166,6 +166,8 @@ app.bindForms = function(){
             // Override the method of the form if the input's name is _method
             let nameOfElement = elements[i].name
 
+            nameOfElement == "check_id" ? nameOfElement = "id" : nameOfElement;
+
             if( nameOfElement == '_method' ){
               method = valueOfElement;
             }
@@ -219,6 +221,7 @@ app.bindForms = function(){
 
           }
           else {
+            console.log("This much is working")
             // If successful, send to form response processor
             app.formResponseProcessor( formId, payload, responsePayload )
           }
@@ -268,7 +271,7 @@ app.formResponseProcessor = function( formId, requestPayload, responsePayload ){
   }
 
   // If forms saved successfully and they have success messages, show them
-  let formsWithSuccessMessages = [ 'accountEdit1', 'accountEdit2' ];
+  let formsWithSuccessMessages = [ 'accountEdit1', 'accountEdit2', 'checksEdit1' ];
   if(formsWithSuccessMessages.indexOf(formId) > -1){
     document.querySelector( "#" + formId + " .formSuccess" ).style.display = 'block';
   }
@@ -521,9 +524,11 @@ app.loadChecksEditPage = () => {
 
         // Put the hidden id field into both forms
         let hiddenIdInputs = document.querySelectorAll("input.hiddenIdInput");
+        console.log("The array of inputs: ", hiddenIdInputs);
+        console.log("Response from the api call: ", responsePayload);
         for( let i = 0; i < hiddenIdInputs.length; i++ ){
           hiddenIdInputs[i].value = responsePayload.id;
-        }
+        };
 
         // Put the data into top form as values where needed
         document.querySelector("#checksEdit1 .displayIdInput").value = responsePayload.id;
