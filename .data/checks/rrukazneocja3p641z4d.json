@@ -1,1 +1,1 @@
-{"id":"rrukazneocja3p641z4d","userPhone":"5367472839","protocol":"http","url":"twitter.com","method":"put","successCodes":[200,201,301,302,400,500],"timeoutSeconds":2,"state":"down","lastChecked":1673215736508}
+{"id":"rrukazneocja3p641z4d","userPhone":"5367472839","protocol":"http","url":"twitter.com","method":"put","successCodes":[200,201,301,302,400,500],"timeoutSeconds":2,"state":"up","lastChecked":1673475095782}
